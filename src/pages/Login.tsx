@@ -3,19 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, AlertCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-// Check if environment variables are available
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
-
-// Debug info to console
-console.log('Supabase URL in Login:', supabaseUrl ? 'Found' : 'Missing');
-console.log('Supabase Key in Login:', supabaseKey ? 'Found' : 'Missing');
-
-// Initialize Supabase client with fallback values for development
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/lib/supabase';
 
 // Super admin credentials
 const SUPER_ADMIN_EMAIL = "minor-kenya@gmail.com";
