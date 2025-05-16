@@ -1,4 +1,3 @@
-
 import React from 'react';
 import AdminLayout from './AdminLayout';
 import { 
@@ -18,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { BarChart } from "@/components/ui/chart";
+import { BarChart } from "@/components/ui/bar-chart";
 
 const StatCard = ({ 
   title, 
