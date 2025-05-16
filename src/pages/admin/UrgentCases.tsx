@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { AlertTriangle, Eye, Edit, Trash2, Search, Filter } from 'lucide-react';
 import {
@@ -28,9 +28,22 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Sample urgent cases data
-const urgentCases = [
+const sampleUrgentCases = [
   {
     id: "CASE-017",
     date: "May 16, 2025",
@@ -41,7 +54,9 @@ const urgentCases = [
     status: "Urgent",
     reporter: "School Teacher",
     priority: "Critical",
-    response: "Immediate"
+    response: "Immediate",
+    details: "Student came to school with visible bruises on arms and face. Teacher reported immediately.",
+    actions_taken: "Case reported to police, child placed in temporary shelter."
   },
   {
     id: "CASE-015",
@@ -53,7 +68,9 @@ const urgentCases = [
     status: "Urgent",
     reporter: "Community Health Worker",
     priority: "High",
-    response: "Within 24hrs"
+    response: "Within 24hrs",
+    details: "Child pulled out of school, family preparing for marriage ceremony.",
+    actions_taken: "Legal intervention initiated, local authorities notified."
   },
   {
     id: "CASE-012",
@@ -65,7 +82,9 @@ const urgentCases = [
     status: "Urgent",
     reporter: "Hospital",
     priority: "Critical",
-    response: "Immediate"
+    response: "Immediate",
+    details: "Victim brought to hospital by neighbor. Signs of sexual assault.",
+    actions_taken: "Medical care provided, police report filed, psychosocial support arranged."
   },
   {
     id: "CASE-011",
@@ -77,7 +96,9 @@ const urgentCases = [
     status: "Urgent",
     reporter: "Neighbor",
     priority: "High",
-    response: "Within 24hrs"
+    response: "Within 24hrs",
+    details: "Child seen foraging for food in trash bins. Appears malnourished.",
+    actions_taken: "Welfare check conducted, food and necessities provided."
   },
   {
     id: "CASE-010",
@@ -89,7 +110,9 @@ const urgentCases = [
     status: "Urgent", 
     reporter: "Anonymous",
     priority: "Critical",
-    response: "Immediate"
+    response: "Immediate",
+    details: "Traditional ceremony planned for the weekend. Multiple girls at risk.",
+    actions_taken: "Anti-FGM advocates notified, intervention team dispatched."
   }
 ];
 
@@ -97,11 +120,55 @@ const UrgentCases = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [urgentCases, setUrgentCases] = useState(sampleUrgentCases);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Modal state
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  
+  useEffect(() => {
+    const fetchCases = async () => {
+      setIsLoading(true);
+      try {
+        // Try to get cases from Supabase
+        const { data, error } = await supabase
+          .from('urgent_cases')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        // If we have data, use it; otherwise use sample data
+        if (data && data.length > 0) {
+          setUrgentCases(data);
+        }
+        
+        // Log activity
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          await supabase.from('activity_logs').insert({
+            user_email: userData.user.email,
+            action: 'view',
+            details: 'Viewed urgent cases',
+            ip_address: 'N/A'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching cases:', error);
+        // Fallback to sample data if there's an error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCases();
+  }, []);
   
   const filteredCases = urgentCases.filter(caseItem => {
     const matchesSearch = searchQuery === "" || 
       Object.values(caseItem).some(value => 
-        value.toString().toLowerCase().includes(searchQuery.toLowerCase())
+        value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
       );
     
     const matchesPriority = priorityFilter === "" || 
@@ -110,11 +177,35 @@ const UrgentCases = () => {
     return matchesSearch && matchesPriority;
   });
 
-  const handleRespond = (caseId: string) => {
-    toast({
-      title: "Response Initiated",
-      description: `Emergency response team notified for case ${caseId}`,
-    });
+  const handleRespond = async (caseId: string) => {
+    try {
+      // Log the response action
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user) {
+        await supabase.from('activity_logs').insert({
+          user_email: userData.user.email,
+          action: 'respond',
+          details: `Responded to case ${caseId}`,
+          ip_address: 'N/A'
+        });
+      }
+      
+      toast({
+        title: "Response Initiated",
+        description: `Emergency response team notified for case ${caseId}`,
+      });
+    } catch (error) {
+      console.error('Error logging response:', error);
+      toast({
+        title: "Response Initiated",
+        description: `Emergency response team notified for case ${caseId}`,
+      });
+    }
+  };
+  
+  const handleViewCase = (caseItem: any) => {
+    setSelectedCase(caseItem);
+    setShowViewModal(true);
   };
 
   const getPriorityBadgeColor = (priority: string) => {
@@ -221,56 +312,164 @@ const UrgentCases = () => {
             </Button>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Case ID</TableHead>
-                  <TableHead>Victim</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Response</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCases.map((caseItem) => (
-                  <TableRow key={caseItem.id}>
-                    <TableCell className="font-medium">{caseItem.id}</TableCell>
-                    <TableCell>{caseItem.victim}</TableCell>
-                    <TableCell>{caseItem.age}</TableCell>
-                    <TableCell>{caseItem.type}</TableCell>
-                    <TableCell>{caseItem.location}</TableCell>
-                    <TableCell>
-                      <Badge className={getPriorityBadgeColor(caseItem.priority)}>
-                        {caseItem.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{caseItem.response}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm" 
-                          className="bg-safeMinor-purple"
-                          onClick={() => handleRespond(caseItem.id)}
-                        >
-                          Respond
-                        </Button>
-                      </div>
-                    </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-safeMinor-purple"></div>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Case ID</TableHead>
+                    <TableHead>Victim</TableHead>
+                    <TableHead>Age</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Response</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredCases.length > 0 ? (
+                    filteredCases.map((caseItem) => (
+                      <TableRow key={caseItem.id}>
+                        <TableCell className="font-medium">{caseItem.id}</TableCell>
+                        <TableCell>{caseItem.victim}</TableCell>
+                        <TableCell>{caseItem.age}</TableCell>
+                        <TableCell>{caseItem.type}</TableCell>
+                        <TableCell>{caseItem.location}</TableCell>
+                        <TableCell>
+                          <Badge className={getPriorityBadgeColor(caseItem.priority)}>
+                            {caseItem.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{caseItem.response}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => handleViewCase(caseItem)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              className="bg-safeMinor-purple"
+                              onClick={() => handleRespond(caseItem.id)}
+                            >
+                              Respond
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                        No cases found matching your filters
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* View Case Modal */}
+      <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              {selectedCase?.priority === "Critical" && <span className="w-3 h-3 rounded-full bg-red-500"></span>}
+              {selectedCase?.priority === "High" && <span className="w-3 h-3 rounded-full bg-orange-500"></span>}
+              {selectedCase?.priority === "Medium" && <span className="w-3 h-3 rounded-full bg-yellow-500"></span>}
+              Case Details: {selectedCase?.id}
+            </DialogTitle>
+            <DialogDescription>
+              Reported on {selectedCase?.date}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-medium text-gray-900 mb-2">Victim Information</h3>
+              <div className="space-y-2 text-sm">
+                <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded">
+                  <span className="text-gray-500">Name:</span>
+                  <span className="col-span-2 font-medium">{selectedCase?.victim}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded">
+                  <span className="text-gray-500">Age:</span>
+                  <span className="col-span-2 font-medium">{selectedCase?.age}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded">
+                  <span className="text-gray-500">Location:</span>
+                  <span className="col-span-2 font-medium">{selectedCase?.location}</span>
+                </div>
+              </div>
+              
+              <h3 className="font-medium text-gray-900 mt-6 mb-2">Case Information</h3>
+              <div className="space-y-2 text-sm">
+                <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded">
+                  <span className="text-gray-500">Type:</span>
+                  <span className="col-span-2 font-medium">{selectedCase?.type}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded">
+                  <span className="text-gray-500">Reporter:</span>
+                  <span className="col-span-2 font-medium">{selectedCase?.reporter}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded">
+                  <span className="text-gray-500">Priority:</span>
+                  <span className="col-span-2">
+                    <Badge className={selectedCase?.priority === "Critical" ? "bg-red-500" : 
+                                      selectedCase?.priority === "High" ? "bg-orange-500" : "bg-yellow-500"}>
+                      {selectedCase?.priority}
+                    </Badge>
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded">
+                  <span className="text-gray-500">Response:</span>
+                  <span className="col-span-2 font-medium">{selectedCase?.response}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-gray-900 mb-2">Case Details</h3>
+              <div className="p-4 bg-gray-50 rounded min-h-[100px] text-sm">
+                {selectedCase?.details}
+              </div>
+              
+              <h3 className="font-medium text-gray-900 mt-6 mb-2">Actions Taken</h3>
+              <div className="p-4 bg-gray-50 rounded min-h-[100px] text-sm">
+                {selectedCase?.actions_taken}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setShowViewModal(false)}>
+              Close
+            </Button>
+            <Button 
+              className="bg-safeMinor-purple" 
+              onClick={() => {
+                handleRespond(selectedCase?.id);
+                setShowViewModal(false);
+              }}
+            >
+              Respond to Case
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };

@@ -12,6 +12,10 @@ import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Dashboard from "./pages/admin/Dashboard";
 import CaseManagement from "./pages/admin/CaseManagement";
+import UrgentCases from "./pages/admin/UrgentCases";
+import UserManagement from "./pages/admin/UserManagement";
+import ActivityLogs from "./pages/admin/ActivityLogs";
+import Settings from "./pages/admin/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +37,10 @@ const App = () => (
           {/* Admin Routes */}
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/admin/cases" element={<CaseManagement />} />
+          <Route path="/admin/urgent" element={<UrgentCases />} />
+          <Route path="/admin/users" element={<UserManagement />} />
+          <Route path="/admin/activity-logs" element={<ActivityLogs />} />
+          <Route path="/admin/settings" element={<Settings />} />
           
           {/* Catch All Route */}
           <Route path="*" element={<NotFound />} />

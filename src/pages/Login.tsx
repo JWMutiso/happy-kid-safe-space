@@ -1,17 +1,19 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, AlertCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createClient } from '@supabase/supabase-js';
 
-// Mock user credentials for demo
-const userCredentials = {
-  reporter: { email: 'reporter@example.com', password: 'password123' },
-  medical: { email: 'medical@example.com', password: 'password123' },
-  police: { email: 'police@example.com', password: 'password123' },
-  admin: { email: 'admin@example.com', password: 'password123' }
-};
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Super admin credentials
+const SUPER_ADMIN_EMAIL = "minor-kenya@gmail.com";
+const SUPER_ADMIN_PASSWORD = "Minor2025@";
 
 const Login = () => {
   const { toast } = useToast();
@@ -23,6 +25,26 @@ const Login = () => {
     rememberMe: false
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        // Check user metadata to determine admin status
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user?.user_metadata?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -30,43 +52,106 @@ const Login = () => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
+    setError('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
     
     // Simple validation
     if (!formData.email || !formData.password) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
+      setError("Please fill in all fields");
+      setIsLoading(false);
       return;
     }
-    
-    // Check credentials based on user type
-    const credentials = userCredentials[userType as keyof typeof userCredentials];
-    
-    if (formData.email === credentials.email && formData.password === credentials.password) {
-      toast({
-        title: "Login successful",
-        description: `Welcome back, ${userType}!`,
-        variant: "default",
-      });
-      
-      // Redirect based on user type
-      if (userType === 'admin') {
+
+    try {
+      // Special case for super admin (for demo purposes)
+      if (formData.email === SUPER_ADMIN_EMAIL && formData.password === SUPER_ADMIN_PASSWORD) {
+        // Sign in with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+        
+        if (error) throw error;
+        
+        // Update user metadata to mark as super admin
+        await supabase.auth.updateUser({
+          data: { role: 'admin', isSuperAdmin: true }
+        });
+        
+        // Log activity
+        await supabase.from('activity_logs').insert({
+          user_email: formData.email,
+          action: 'login',
+          details: 'Super admin login',
+          ip_address: 'N/A' // In a real app, you would capture this
+        });
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome back, Super Admin!",
+        });
+        
         navigate('/admin');
       } else {
-        navigate('/');
+        // Handle other user types with appropriate role-based authentication
+        let authMethod;
+        
+        if (userType === 'admin') {
+          // For admin, use email/password
+          authMethod = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password
+          });
+        } else {
+          // For other user types, you might use different authentication methods
+          // For now, use email/password for all
+          authMethod = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password
+          });
+        }
+        
+        if (authMethod.error) throw authMethod.error;
+        
+        // Get user metadata to check role
+        const { data: userData } = await supabase.auth.getUser();
+        const userRole = userData.user?.user_metadata?.role || 'reporter';
+        
+        // Log activity
+        await supabase.from('activity_logs').insert({
+          user_email: formData.email,
+          action: 'login',
+          details: `${userType} login`,
+          ip_address: 'N/A' // In a real app, you would capture this
+        });
+        
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${userType}!`,
+        });
+        
+        // Redirect based on user type
+        if (userRole === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       }
-    } else {
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setError(error.message || "Invalid email or password");
       toast({
         title: "Login failed",
-        description: "Invalid email or password",
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -119,6 +204,13 @@ const Login = () => {
               </p>
             </TabsContent>
           </Tabs>
+          
+          {error && (
+            <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              {error}
+            </div>
+          )}
           
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
@@ -199,9 +291,12 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-safeMinor-purple hover:bg-safeMinor-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-safeMinor-purple"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-safeMinor-purple hover:bg-safeMinor-purple/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-safeMinor-purple ${
+                  isLoading && "opacity-70 cursor-not-allowed"
+                }`}
               >
-                Login
+                {isLoading ? "Logging in..." : "Login"}
               </button>
             </div>
           </form>
