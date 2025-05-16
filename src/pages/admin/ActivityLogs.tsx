@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { Activity, Search, Download, Calendar, Filter } from 'lucide-react';
@@ -21,12 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase, isUserSuperAdmin } from '@/lib/supabase';
 
 // Sample activity logs
 const sampleLogs = [
@@ -83,13 +77,9 @@ const ActivityLogs = () => {
     const fetchLogs = async () => {
       setIsLoading(true);
       try {
-        // Check if user is super admin
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user?.user_metadata?.isSuperAdmin) {
-          setIsSuperAdmin(true);
-        } else {
-          setIsSuperAdmin(false);
-        }
+        // Check if user is super admin using our helper function
+        const superAdmin = await isUserSuperAdmin();
+        setIsSuperAdmin(superAdmin);
         
         // Try to fetch logs from Supabase
         const { data, error } = await supabase
@@ -105,6 +95,7 @@ const ActivityLogs = () => {
         }
         
         // Log this activity
+        const { data: userData } = await supabase.auth.getUser();
         if (userData.user) {
           await supabase.from('activity_logs').insert({
             user_email: userData.user.email,
