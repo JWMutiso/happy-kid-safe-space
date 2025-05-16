@@ -7,7 +7,8 @@ import {
   AlertCircle,
   Users,
   Settings,
-  LogOut
+  LogOut,
+  Activity
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -22,6 +23,7 @@ const AdminSidebar = () => {
     { path: '/admin/cases', label: 'Case Management', icon: <FileText size={18} /> },
     { path: '/admin/urgent', label: 'Urgent Cases', icon: <AlertCircle size={18} /> },
     { path: '/admin/users', label: 'User Management', icon: <Users size={18} /> },
+    { path: '/admin/activity-logs', label: 'Activity Logs', icon: <Activity size={18} /> },
     { path: '/admin/settings', label: 'Settings', icon: <Settings size={18} /> },
   ];
 
