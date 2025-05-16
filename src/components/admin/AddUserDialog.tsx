@@ -21,6 +21,7 @@ export interface AddUserDialogProps {
   setNewUser: React.Dispatch<React.SetStateAction<NewUser>>;
   handleAddUser: () => void;
   isCurrentUserSuperAdmin: boolean;
+  children?: React.ReactNode; // Add children prop
 }
 
 const AddUserDialog = ({
@@ -30,9 +31,11 @@ const AddUserDialog = ({
   setNewUser,
   handleAddUser,
   isCurrentUserSuperAdmin,
+  children,
 }: AddUserDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {children}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>

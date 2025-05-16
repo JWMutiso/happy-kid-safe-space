@@ -37,9 +37,14 @@ import {
 } from "@/components/ui/dialog";
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+// Initialize Supabase client with proper fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+
+// Debug info to console
+console.log('Supabase URL in UrgentCases:', supabaseUrl ? 'Found' : 'Missing');
+console.log('Supabase Key in UrgentCases:', supabaseKey ? 'Found' : 'Missing');
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Sample urgent cases data

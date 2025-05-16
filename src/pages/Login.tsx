@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, AlertCircle } from 'lucide-react';
@@ -8,18 +7,15 @@ import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 // Check if environment variables are available
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
 // Debug info to console
-console.log('Supabase URL:', supabaseUrl ? 'Found' : 'Missing');
-console.log('Supabase Key:', supabaseKey ? 'Found' : 'Missing');
+console.log('Supabase URL in Login:', supabaseUrl ? 'Found' : 'Missing');
+console.log('Supabase Key in Login:', supabaseKey ? 'Found' : 'Missing');
 
 // Initialize Supabase client with fallback values for development
-const supabase = createClient(
-  supabaseUrl || 'https://your-project.supabase.co', 
-  supabaseKey || 'your-anon-key'
-);
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Super admin credentials
 const SUPER_ADMIN_EMAIL = "minor-kenya@gmail.com";
