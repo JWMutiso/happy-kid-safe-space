@@ -7,9 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Check if environment variables are available
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Debug info to console
+console.log('Supabase URL:', supabaseUrl ? 'Found' : 'Missing');
+console.log('Supabase Key:', supabaseKey ? 'Found' : 'Missing');
+
+// Initialize Supabase client with fallback values for development
+const supabase = createClient(
+  supabaseUrl || 'https://your-project.supabase.co', 
+  supabaseKey || 'your-anon-key'
+);
 
 // Super admin credentials
 const SUPER_ADMIN_EMAIL = "minor-kenya@gmail.com";

@@ -1,7 +1,5 @@
 
 import React from 'react';
-import { NewUser } from '@/types/user';
-import { Shield } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,16 +11,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NewUser } from '@/types/user';
+import { Switch } from '@/components/ui/switch';
 
-interface AddUserDialogProps {
+export interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   newUser: NewUser;
@@ -45,7 +37,7 @@ const AddUserDialog = ({
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>
-            Create a new user account. They'll receive an email with login instructions.
+            Create a new user account in the system
           </DialogDescription>
         </DialogHeader>
         
@@ -54,7 +46,7 @@ const AddUserDialog = ({
             <Label htmlFor="name">Full Name</Label>
             <Input 
               id="name" 
-              placeholder="Enter full name"
+              placeholder="Enter user's full name"
               value={newUser.name}
               onChange={(e) => setNewUser({...newUser, name: e.target.value})}
             />
@@ -65,7 +57,7 @@ const AddUserDialog = ({
             <Input 
               id="email" 
               type="email" 
-              placeholder="Enter email address"
+              placeholder="Enter user's email address"
               value={newUser.email}
               onChange={(e) => setNewUser({...newUser, email: e.target.value})}
             />
@@ -73,28 +65,26 @@ const AddUserDialog = ({
           
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select 
-              value={newUser.role} 
-              onValueChange={(value) => setNewUser({...newUser, role: value})}
+            <select
+              id="role"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={newUser.role}
+              onChange={(e) => setNewUser({...newUser, role: e.target.value})}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Case Manager">Case Manager</SelectItem>
-                <SelectItem value="Medical Officer">Medical Officer</SelectItem>
-                <SelectItem value="Police Officer">Police Officer</SelectItem>
-                <SelectItem value="Admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="">Select a role</option>
+              <option value="reporter">Reporter</option>
+              <option value="medical">Medical Officer</option>
+              <option value="police">Police Officer</option>
+              <option value="admin">Administrator</option>
+            </select>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="password">Temporary Password</Label>
+            <Label htmlFor="password">Initial Password</Label>
             <Input 
               id="password" 
               type="password" 
-              placeholder="Enter temporary password"
+              placeholder="Set initial password"
               value={newUser.password}
               onChange={(e) => setNewUser({...newUser, password: e.target.value})}
             />
@@ -103,14 +93,11 @@ const AddUserDialog = ({
           {isCurrentUserSuperAdmin && (
             <div className="flex items-center space-x-2">
               <Switch 
-                id="super-admin" 
+                id="superadmin"
                 checked={newUser.isSuperAdmin}
                 onCheckedChange={(checked) => setNewUser({...newUser, isSuperAdmin: checked})}
               />
-              <Label htmlFor="super-admin" className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-safeMinor-purple" />
-                Grant Super Admin privileges
-              </Label>
+              <Label htmlFor="superadmin">Grant Super Admin privileges</Label>
             </div>
           )}
         </div>
