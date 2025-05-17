@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
-import { Activity, Search, Download, Calendar, Filter } from 'lucide-react';
+import { Activity, Search, Download, Filter } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -21,68 +21,29 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase, isUserSuperAdmin } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { logAdminActivity } from '@/lib/supabase';
 
-// Sample activity logs
-const sampleLogs = [
-  {
-    id: 1,
-    user_email: "minor-kenya@gmail.com",
-    action: "login",
-    details: "Super admin login",
-    ip_address: "192.168.1.1",
-    created_at: "2025-05-16T09:30:00.000Z"
-  },
-  {
-    id: 2,
-    user_email: "minor-kenya@gmail.com",
-    action: "view",
-    details: "Viewed urgent cases",
-    ip_address: "192.168.1.1",
-    created_at: "2025-05-16T09:32:15.000Z"
-  },
-  {
-    id: 3,
-    user_email: "minor-kenya@gmail.com",
-    action: "respond",
-    details: "Responded to case CASE-017",
-    ip_address: "192.168.1.1",
-    created_at: "2025-05-16T09:45:22.000Z"
-  },
-  {
-    id: 4,
-    user_email: "john.kimani@example.com",
-    action: "login",
-    details: "Case Manager login",
-    ip_address: "192.168.1.2",
-    created_at: "2025-05-16T10:15:03.000Z"
-  },
-  {
-    id: 5,
-    user_email: "john.kimani@example.com",
-    action: "create",
-    details: "Created new case CASE-018",
-    ip_address: "192.168.1.2",
-    created_at: "2025-05-16T10:25:47.000Z"
-  }
-];
+interface ActivityLog {
+  id: string;
+  user_email: string;
+  action: string;
+  details: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
 
 const ActivityLogs = () => {
-  const [logs, setLogs] = useState<any[]>(sampleLogs);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const fetchLogs = async () => {
       setIsLoading(true);
       try {
-        // Check if user is super admin using our helper function
-        const superAdmin = await isUserSuperAdmin();
-        setIsSuperAdmin(superAdmin);
-        
-        // Try to fetch logs from Supabase
+        // Fetch logs from Supabase
         const { data, error } = await supabase
           .from('activity_logs')
           .select('*')
@@ -90,24 +51,15 @@ const ActivityLogs = () => {
           
         if (error) throw error;
         
-        // If we have data, use it; otherwise use sample data
-        if (data && data.length > 0) {
-          setLogs(data);
+        if (data) {
+          setLogs(data as ActivityLog[]);
         }
         
         // Log this activity
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          await supabase.from('activity_logs').insert({
-            user_email: userData.user.email,
-            action: 'view',
-            details: 'Viewed activity logs',
-            ip_address: 'N/A'
-          });
-        }
+        await logAdminActivity('view', 'Viewed activity logs');
+        
       } catch (error) {
         console.error('Error fetching logs:', error);
-        // Fallback to sample data if there's an error
       } finally {
         setIsLoading(false);
       }
@@ -142,7 +94,7 @@ const ActivityLogs = () => {
   };
   
   // Generate CSV of logs for download
-  const downloadLogs = () => {
+  const downloadLogs = async () => {
     // Create CSV content
     const headers = ["ID", "User", "Action", "Details", "IP Address", "Date/Time"];
     const csvContent = [
@@ -151,8 +103,8 @@ const ActivityLogs = () => {
         log.id,
         log.user_email,
         log.action,
-        `"${log.details}"`, // Quote details to handle commas
-        log.ip_address,
+        `"${log.details || ''}"`, // Quote details to handle commas
+        log.ip_address || 'N/A',
         formatDate(log.created_at)
       ].join(","))
     ].join("\n");
@@ -167,6 +119,9 @@ const ActivityLogs = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Log this activity
+    await logAdminActivity('export', 'Downloaded activity logs');
   };
   
   // Get badge color based on action
@@ -186,31 +141,14 @@ const ActivityLogs = () => {
         return "bg-cyan-500 hover:bg-cyan-600";
       case 'respond':
         return "bg-safeMinor-purple hover:bg-safeMinor-purple/90";
+      case 'access':
+        return "bg-yellow-500 hover:bg-yellow-600";
+      case 'export':
+        return "bg-indigo-500 hover:bg-indigo-600";
       default:
         return "bg-gray-500 hover:bg-gray-600";
     }
   };
-
-  if (!isSuperAdmin && !isLoading) {
-    return (
-      <AdminLayout>
-        <div className="flex flex-col items-center justify-center h-[80vh] text-center">
-          <div className="bg-red-100 p-12 rounded-lg">
-            <h1 className="text-2xl font-bold text-red-800 mb-4">Access Restricted</h1>
-            <p className="text-red-600 mb-6">
-              You need super admin privileges to view the activity logs.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => window.history.back()}
-            >
-              Go Back
-            </Button>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
 
   return (
     <AdminLayout>
@@ -237,7 +175,7 @@ const ActivityLogs = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input 
@@ -248,7 +186,7 @@ const ActivityLogs = () => {
               />
             </div>
             <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Filter by action" />
               </SelectTrigger>
               <SelectContent>
@@ -260,12 +198,14 @@ const ActivityLogs = () => {
                 <SelectItem value="delete">Delete</SelectItem>
                 <SelectItem value="view">View</SelectItem>
                 <SelectItem value="respond">Respond</SelectItem>
+                <SelectItem value="access">Access</SelectItem>
+                <SelectItem value="export">Export</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={() => {
               setSearchQuery("");
               setActionFilter("");
-            }}>
+            }} className="w-full md:w-auto">
               Reset
             </Button>
           </div>
@@ -275,7 +215,7 @@ const ActivityLogs = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-safeMinor-purple"></div>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -299,8 +239,8 @@ const ActivityLogs = () => {
                             {log.action}
                           </Badge>
                         </TableCell>
-                        <TableCell>{log.details}</TableCell>
-                        <TableCell>{log.ip_address}</TableCell>
+                        <TableCell>{log.details || 'N/A'}</TableCell>
+                        <TableCell>{log.ip_address || 'N/A'}</TableCell>
                       </TableRow>
                     ))
                   ) : (

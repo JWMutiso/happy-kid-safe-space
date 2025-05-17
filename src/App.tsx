@@ -19,6 +19,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import ActivityLogs from "./pages/admin/ActivityLogs";
 import Settings from "./pages/admin/Settings";
 import NotFound from "./pages/NotFound";
+import AdminRoute from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -38,13 +39,13 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Auth />} />
             
-            {/* Admin Routes */}
-            <Route path="/admin" element={<Dashboard />} />
-            <Route path="/admin/cases" element={<CaseManagement />} />
-            <Route path="/admin/urgent" element={<UrgentCases />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/activity-logs" element={<ActivityLogs />} />
-            <Route path="/admin/settings" element={<Settings />} />
+            {/* Protected Admin Routes */}
+            <Route path="/admin" element={<AdminRoute><Dashboard /></AdminRoute>} />
+            <Route path="/admin/cases" element={<AdminRoute><CaseManagement /></AdminRoute>} />
+            <Route path="/admin/urgent" element={<AdminRoute><UrgentCases /></AdminRoute>} />
+            <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+            <Route path="/admin/activity-logs" element={<AdminRoute><ActivityLogs /></AdminRoute>} />
+            <Route path="/admin/settings" element={<AdminRoute><Settings /></AdminRoute>} />
             
             {/* Catch All Route */}
             <Route path="*" element={<NotFound />} />

@@ -1,13 +1,26 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ShieldAlert, Clock, HelpCircle, Phone, LogIn, LogOut, UserCheck } from 'lucide-react';
+import { Home, ShieldAlert, Clock, HelpCircle, Phone, LogIn, LogOut, UserCheck, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { isUserSuperAdmin } from '@/lib/supabase';
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const admin = await isUserSuperAdmin();
+        setIsAdmin(admin);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -50,6 +63,21 @@ const Navbar = () => {
                   {item.label}
                 </Link>
               ))}
+
+              {/* Admin link for admin users */}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname.startsWith('/admin')
+                      ? 'bg-safeMinor-purple text-white'
+                      : 'text-gray-700 hover:bg-safeMinor-lightPurple hover:text-gray-900'
+                  } transition-colors duration-200`}
+                >
+                  <span className="mr-2"><Settings className="w-5 h-5" /></span>
+                  Admin
+                </Link>
+              )}
             </div>
           </div>
           
@@ -127,6 +155,21 @@ const Navbar = () => {
               {item.label}
             </Link>
           ))}
+          
+          {/* Admin link for admin users in mobile menu */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
+                location.pathname.startsWith('/admin')
+                  ? 'bg-safeMinor-purple text-white'
+                  : 'text-gray-700 hover:bg-safeMinor-lightPurple hover:text-gray-900'
+              }`}
+            >
+              <span className="mr-2"><Settings className="w-5 h-5" /></span>
+              Admin
+            </Link>
+          )}
         </div>
       </div>
     </nav>

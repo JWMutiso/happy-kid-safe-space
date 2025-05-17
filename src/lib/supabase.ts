@@ -1,16 +1,9 @@
 
-import { createClient } from '@supabase/supabase-js';
+// This file is deprecated - use the client from @/integrations/supabase/client instead
+import { supabase } from '@/integrations/supabase/client';
 
-// Get environment variables with fallbacks for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
-
-// Log availability for debugging
-console.log('Supabase URL in lib:', supabaseUrl ? 'Found' : 'Missing');
-console.log('Supabase Key in lib:', supabaseKey ? 'Found' : 'Missing');
-
-// Create a single Supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Reexport the supabase client
+export { supabase };
 
 // Helper function to get the current user
 export const getCurrentUser = async () => {
@@ -24,6 +17,29 @@ export const getCurrentUser = async () => {
 
 // Helper for checking if the current user is a super admin
 export const isUserSuperAdmin = async () => {
-  const user = await getCurrentUser();
-  return user?.user_metadata?.isSuperAdmin === true;
+  const { data } = await supabase.auth.getUser();
+  const user = data.user;
+  
+  if (!user) return false;
+  
+  // Check if the user is the default admin or has the admin role in metadata
+  return user.email === 'safeminor@gmail.com' || user.user_metadata?.role === 'admin';
+};
+
+// Log admin activity
+export const logAdminActivity = async (action: string, details: string) => {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+    
+    await supabase.from('activity_logs').insert({
+      user_id: userData.user.id,
+      user_email: userData.user.email || 'unknown',
+      action,
+      details,
+      ip_address: 'N/A' // In a production app, you could capture the real IP
+    });
+  } catch (error) {
+    console.error('Error logging activity:', error);
+  }
 };

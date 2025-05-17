@@ -10,9 +10,14 @@ import {
   LogOut,
   Activity
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const AdminSidebar = () => {
   const location = useLocation();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -26,6 +31,17 @@ const AdminSidebar = () => {
     { path: '/admin/activity-logs', label: 'Activity Logs', icon: <Activity size={18} /> },
     { path: '/admin/settings', label: 'Settings', icon: <Settings size={18} /> },
   ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("Logged out successfully");
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error("Error logging out");
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-white shadow-lg border-r">
@@ -64,13 +80,13 @@ const AdminSidebar = () => {
       </nav>
       
       <div className="p-4 border-t">
-        <Link
-          to="/"
-          className="flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+        <button
+          onClick={handleSignOut}
+          className="flex items-center w-full px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
         >
           <LogOut size={18} className="mr-3" />
           <span>Logout</span>
-        </Link>
+        </button>
       </div>
     </div>
   );
