@@ -3,9 +3,13 @@ import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { Phone, Mail } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Contact = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,25 +25,48 @@ const Contact = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would normally submit to an API
-    console.log('Contact form submitted:', formData);
+    setIsSubmitting(true);
     
-    // Show success message
-    toast({
-      title: "Message sent successfully",
-      description: "We'll get back to you as soon as possible.",
-      variant: "default",
-    });
-    
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      message: ''
-    });
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            subject: formData.subject,
+            message: formData.message,
+            user_id: user?.id || null
+          }
+        ]);
+
+      if (error) throw error;
+      
+      // Show success message
+      toast({
+        title: "Message sent successfully",
+        description: "We'll get back to you as soon as possible.",
+        variant: "default",
+      });
+      
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error sending message",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -160,8 +187,12 @@ const Contact = () => {
                   </div>
                   
                   <div>
-                    <button type="submit" className="safeminor-btn-primary w-full">
-                      Send Message
+                    <button 
+                      type="submit" 
+                      className="safeminor-btn-primary w-full"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
                     </button>
                   </div>
                 </div>

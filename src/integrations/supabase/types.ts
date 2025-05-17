@@ -9,7 +9,90 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cases: {
+        Row: {
+          created_at: string
+          days_elapsed: number | null
+          description: string | null
+          id: string
+          incident_date: string | null
+          incident_location: string | null
+          is_delayed: boolean | null
+          relationship: string | null
+          reporter_contact: string | null
+          reporter_name: string | null
+          status: string | null
+          user_id: string | null
+          victim_age: number | null
+          victim_name: string
+          violence_type: string
+        }
+        Insert: {
+          created_at?: string
+          days_elapsed?: number | null
+          description?: string | null
+          id?: string
+          incident_date?: string | null
+          incident_location?: string | null
+          is_delayed?: boolean | null
+          relationship?: string | null
+          reporter_contact?: string | null
+          reporter_name?: string | null
+          status?: string | null
+          user_id?: string | null
+          victim_age?: number | null
+          victim_name: string
+          violence_type: string
+        }
+        Update: {
+          created_at?: string
+          days_elapsed?: number | null
+          description?: string | null
+          id?: string
+          incident_date?: string | null
+          incident_location?: string | null
+          is_delayed?: boolean | null
+          relationship?: string | null
+          reporter_contact?: string | null
+          reporter_name?: string | null
+          status?: string | null
+          user_id?: string | null
+          victim_age?: number | null
+          victim_name?: string
+          violence_type?: string
+        }
+        Relationships: []
+      }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

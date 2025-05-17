@@ -8,7 +8,7 @@ interface LayoutProps {
   showBackground?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, showBackground = false }) => {
+const Layout: React.FC<LayoutProps> = ({ children, showBackground = true }) => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Navbar />

@@ -1,10 +1,13 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, ShieldAlert, Clock, HelpCircle, Phone, LogIn } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, ShieldAlert, Clock, HelpCircle, Phone, LogIn, LogOut, UserCheck } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -17,13 +20,18 @@ const Navbar = () => {
     { path: '/resources', label: 'Resources', icon: <HelpCircle className="w-5 h-5" /> },
     { path: '/contact', label: 'Contact', icon: <Phone className="w-5 h-5" /> },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
   
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex-shrink-0 flex items-center">
-            <span className="text-safeMinor-purple text-2xl font-bold">SafeMinor</span>
+            <span className="text-safeMinor-purple text-2xl font-bold">SafeMinor Kenya</span>
           </Link>
           
           <div className="hidden md:block">
@@ -46,13 +54,31 @@ const Navbar = () => {
           </div>
           
           <div className="flex items-center">
-            <Link
-              to="/login"
-              className="flex items-center bg-safeMinor-purple text-white px-4 py-2 rounded-lg font-medium hover:bg-safeMinor-purple/90 transition-colors"
-            >
-              <LogIn className="w-5 h-5 mr-2" />
-              Login
-            </Link>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <div className="text-sm text-gray-700">
+                  <span className="flex items-center">
+                    <UserCheck className="w-4 h-4 mr-1" />
+                    {user.email?.split('@')[0]}
+                  </span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                >
+                  <LogOut className="w-5 h-5 mr-2" />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/auth"
+                className="flex items-center bg-safeMinor-purple text-white px-4 py-2 rounded-lg font-medium hover:bg-safeMinor-purple/90 transition-colors"
+              >
+                <LogIn className="w-5 h-5 mr-2" />
+                Sign In
+              </Link>
+            )}
           </div>
           
           <div className="md:hidden flex items-center">
