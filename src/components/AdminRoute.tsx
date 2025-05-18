@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isUserSuperAdmin } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,10 +10,11 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -26,11 +27,14 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         // Check if user is an admin
         const adminStatus = await isUserSuperAdmin();
         setIsAdmin(adminStatus);
-
-        // Log admin access if admin
-        if (adminStatus) {
-          // Logging already handled in the isUserSuperAdmin function
-          console.log('Admin access granted');
+        
+        // Only navigate away if NOT admin to avoid potential loop
+        if (!adminStatus) {
+          toast({
+            title: "Unauthorized",
+            description: "You don't have permission to access the admin area",
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
@@ -45,12 +49,12 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
       }
     };
 
-    if (!isLoading) {
+    if (!authLoading) {
       checkAdminStatus();
     }
-  }, [user, isLoading, toast]);
+  }, [user, authLoading, toast]);
 
-  if (isLoading || checkingAdmin) {
+  if (authLoading || checkingAdmin) {
     // Show loading state
     return (
       <div className="flex justify-center items-center h-screen">
@@ -61,21 +65,11 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
 
   // If not authenticated, redirect to login
   if (!user) {
-    toast({
-      title: "Authentication Required",
-      description: "You must be logged in to access the admin area",
-      variant: "destructive",
-    });
     return <Navigate to="/auth" replace />;
   }
 
   // If authenticated but not admin, redirect to home
   if (!isAdmin) {
-    toast({
-      title: "Unauthorized",
-      description: "You don't have permission to access the admin area",
-      variant: "destructive",
-    });
     return <Navigate to="/" replace />;
   }
 
