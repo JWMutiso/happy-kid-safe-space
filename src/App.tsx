@@ -12,6 +12,7 @@ import Resources from "./pages/Resources";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Auth from "./pages/Auth";
+import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/admin/Dashboard";
 import CaseManagement from "./pages/admin/CaseManagement";
 import UrgentCases from "./pages/admin/UrgentCases";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
             
             {/* Protected Admin Routes */}
             <Route path="/admin" element={<AdminRoute><Dashboard /></AdminRoute>} />

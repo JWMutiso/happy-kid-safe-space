@@ -295,6 +295,15 @@ const Login = () => {
             </div>
           </form>
           
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Are you an administrator?{' '}
+              <a href="/admin-login" className="font-medium text-safeMinor-purple hover:text-safeMinor-purple/80">
+                Go to Admin Login
+              </a>
+            </p>
+          </div>
+          
           <div className="mt-6">
             <p className="text-center text-sm text-gray-600">
               By logging in, you agree to our{' '}

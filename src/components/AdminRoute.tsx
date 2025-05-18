@@ -28,7 +28,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         const adminStatus = await isUserSuperAdmin();
         setIsAdmin(adminStatus);
         
-        // Only navigate away if NOT admin to avoid potential loop
+        // Only show a toast if NOT admin (no need to navigate here, we'll do that below)
         if (!adminStatus) {
           toast({
             title: "Unauthorized",
@@ -63,9 +63,9 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  // If not authenticated, redirect to login
+  // If not authenticated, redirect to admin login
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   // If authenticated but not admin, redirect to home

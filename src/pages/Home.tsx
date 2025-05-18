@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
@@ -144,6 +143,16 @@ const Home = () => {
             </div>
           </div>
         </section>
+      </div>
+      
+      <div className="mt-4 text-center">
+        <a 
+          href="/admin-login" 
+          className="text-sm text-safeMinor-purple hover:underline"
+          aria-label="Admin Portal"
+        >
+          Admin Portal
+        </a>
       </div>
     </Layout>
   );
