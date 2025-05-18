@@ -88,10 +88,16 @@ export const getDelayedCases = async () => {
 // Manually update days elapsed and check if case is delayed
 export const updateCaseDaysElapsed = async (caseId: string) => {
   try {
-    // This should trigger the DB function automatically
+    // Instead of trying to update 'updated_at', use 'created_at' which exists in the type
+    // This will trigger the database function we created to recalculate days_elapsed
+    const now = new Date().toISOString();
     const { error } = await supabase
       .from('cases')
-      .update({ updated_at: new Date().toISOString() })
+      .update({ 
+        // We'll update any field that exists in the cases table to trigger our database trigger
+        // Since the trigger runs on any update, this will recalculate days_elapsed
+        created_at: now 
+      })
       .eq('id', caseId);
       
     if (error) throw error;
