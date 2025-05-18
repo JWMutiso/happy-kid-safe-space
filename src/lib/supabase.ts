@@ -43,3 +43,68 @@ export const logAdminActivity = async (action: string, details: string) => {
     console.error('Error logging activity:', error);
   }
 };
+
+// Case management helper functions
+export const updateCaseStatus = async (caseId: string, status: string) => {
+  try {
+    const { error } = await supabase
+      .from('cases')
+      .update({ status })
+      .eq('id', caseId);
+
+    if (error) throw error;
+    
+    // Log the activity
+    await logAdminActivity(
+      'update_case_status',
+      `Updated case ${caseId} status to ${status}`
+    );
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating case status:', error);
+    return { success: false, error };
+  }
+};
+
+// Get all delayed cases
+export const getDelayedCases = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('cases')
+      .select('*')
+      .eq('is_delayed', true)
+      .order('days_elapsed', { ascending: false });
+      
+    if (error) throw error;
+    
+    return { data };
+  } catch (error) {
+    console.error('Error fetching delayed cases:', error);
+    return { data: null, error };
+  }
+};
+
+// Manually update days elapsed and check if case is delayed
+export const updateCaseDaysElapsed = async (caseId: string) => {
+  try {
+    // This should trigger the DB function automatically
+    const { error } = await supabase
+      .from('cases')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', caseId);
+      
+    if (error) throw error;
+    
+    // Log the activity
+    await logAdminActivity(
+      'update_case_days',
+      `Manually triggered days_elapsed update for case ${caseId}`
+    );
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating case days elapsed:', error);
+    return { success: false, error };
+  }
+};

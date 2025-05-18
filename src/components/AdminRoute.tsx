@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { isUserSuperAdmin } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 interface AdminRouteProps {
@@ -23,24 +23,14 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
       }
 
       try {
-        // Check if user is an admin based on metadata
-        const { data: userData } = await supabase.auth.getUser();
-        
-        // Check if the user's email is the admin email or has admin role in metadata
-        const isUserAdmin = 
-          userData.user?.email === 'safeminor@gmail.com' || 
-          userData.user?.user_metadata?.role === 'admin';
-        
-        setIsAdmin(isUserAdmin);
+        // Check if user is an admin
+        const adminStatus = await isUserSuperAdmin();
+        setIsAdmin(adminStatus);
 
-        // Log admin access
-        if (isUserAdmin) {
-          await supabase.from('activity_logs').insert({
-            user_email: userData.user?.email || 'unknown',
-            action: 'access',
-            details: 'Admin area accessed',
-            ip_address: 'N/A'
-          });
+        // Log admin access if admin
+        if (adminStatus) {
+          // Logging already handled in the isUserSuperAdmin function
+          console.log('Admin access granted');
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
@@ -58,7 +48,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     if (!isLoading) {
       checkAdminStatus();
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, toast]);
 
   if (isLoading || checkingAdmin) {
     // Show loading state
