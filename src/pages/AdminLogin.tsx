@@ -1,16 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, AlertCircle, LogIn } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from '@/contexts/AuthContext';
 
 const AdminLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isAdmin, checkAdminStatus } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -21,29 +22,18 @@ const AdminLogin = () => {
 
   useEffect(() => {
     // Check if user is already logged in as admin
-    const checkAdminSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        // Check if the user is an admin
-        try {
-          const isAdmin = await isUserAdmin(data.session.user.email);
-          if (isAdmin) {
-            navigate('/admin');
-          }
-        } catch (error) {
-          console.error("Error checking admin status:", error);
+    const checkSession = async () => {
+      if (user) {
+        const isAdminUser = await checkAdminStatus();
+        
+        if (isAdminUser) {
+          navigate('/admin');
         }
       }
     };
     
-    checkAdminSession();
-  }, [navigate]);
-
-  const isUserAdmin = async (email: string | null) => {
-    if (!email) return false;
-    // Check if the email is the admin email
-    return email === 'safeminor@gmail.com';
-  };
+    checkSession();
+  }, [user, navigate, isAdmin, checkAdminStatus]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,24 +57,28 @@ const AdminLogin = () => {
       
       if (error) throw error;
       
-      // Check if the user is an admin
-      const isAdmin = await isUserAdmin(data.user?.email);
-      
-      if (!isAdmin) {
-        throw new Error("You don't have administrator privileges");
-      }
-      
-      // Set admin role in user metadata
-      await supabase.auth.updateUser({
-        data: { role: 'admin' }
-      });
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome to the admin dashboard!",
-      });
-      
-      navigate('/admin');
+      // Wait for auth state update
+      setTimeout(async () => {
+        // Check if the user is an admin
+        const isAdminUser = await checkAdminStatus();
+        
+        if (!isAdminUser) {
+          await supabase.auth.signOut();
+          throw new Error("You don't have administrator privileges");
+        }
+        
+        // Set admin role in user metadata if not already set
+        await supabase.auth.updateUser({
+          data: { role: 'admin' }
+        });
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome to the admin dashboard!",
+        });
+        
+        navigate('/admin');
+      }, 300);
     } catch (error: any) {
       console.error("Admin login error:", error);
       setError(error.message || "Invalid credentials");
@@ -93,7 +87,6 @@ const AdminLogin = () => {
         description: error.message || "Invalid credentials",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };

@@ -1,47 +1,28 @@
 
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminHeader from '../../components/AdminHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { isUserSuperAdmin } from '@/lib/supabase';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   
-  // Check admin status when component mounts
+  // Redirect if not admin
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    if (!isLoading) {
       if (!user) {
-        setIsLoading(false);
-        navigate('/login');
-        return;
-      }
-      
-      try {
-        const isAdmin = await isUserSuperAdmin();
-        setIsAdmin(isAdmin);
-        
-        if (!isAdmin) {
-          navigate('/');
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
+        navigate('/admin-login');
+      } else if (!isAdmin) {
         navigate('/');
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    checkAdminStatus();
-  }, [user, navigate]);
+    }
+  }, [user, isAdmin, isLoading, navigate]);
   
   if (isLoading) {
     return (
@@ -52,7 +33,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }
   
   if (!isAdmin) {
-    return null; // Will redirect in the useEffect
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-safeMinor-purple"></div>
+      </div>
+    ); // Will redirect in the useEffect
   }
   
   return (
