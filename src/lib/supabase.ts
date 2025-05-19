@@ -1,3 +1,4 @@
+
 // This file is deprecated - use the client from @/integrations/supabase/client instead
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,7 +22,7 @@ export const isUserSuperAdmin = async () => {
   
   if (!user) return false;
   
-  // Check if the user is the default admin or has the admin role in metadata
+  // The admin can be identified by their email
   return user.email === 'safeminor@gmail.com' || user.user_metadata?.role === 'admin';
 };
 

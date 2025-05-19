@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isUserSuperAdmin } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
@@ -14,11 +14,11 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) {
+        setIsAdmin(false);
         setCheckingAdmin(false);
         return;
       }
@@ -28,7 +28,6 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         const adminStatus = await isUserSuperAdmin();
         setIsAdmin(adminStatus);
         
-        // Only show a toast if NOT admin (no need to navigate here, we'll do that below)
         if (!adminStatus) {
           toast({
             title: "Unauthorized",
@@ -63,14 +62,9 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  // If not authenticated, redirect to admin login
-  if (!user) {
+  // If not authenticated or not an admin, redirect to admin login
+  if (!user || !isAdmin) {
     return <Navigate to="/admin-login" replace />;
-  }
-
-  // If authenticated but not admin, redirect to home
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
   }
 
   // If admin, render the children
