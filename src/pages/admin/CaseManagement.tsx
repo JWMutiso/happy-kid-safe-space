@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { FileText, Search, Filter, Eye, Edit, Trash2, MoreHorizontal, FileCheck, MessageSquare, AlertCircle } from 'lucide-react';
@@ -297,7 +296,7 @@ const CaseManagement = () => {
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all-statuses">All Statuses</SelectItem>
                 <SelectItem value="New">New</SelectItem>
                 <SelectItem value="In Progress">In Progress</SelectItem>
                 <SelectItem value="Urgent">Urgent</SelectItem>

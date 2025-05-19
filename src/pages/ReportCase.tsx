@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { useToast } from "@/components/ui/use-toast";
@@ -271,7 +270,7 @@ const ReportCase = () => {
                     onChange={handleInputChange}
                     className="safeminor-input"
                   >
-                    <option value="">{t.selectType}</option>
+                    <option value="placeholder">{t.selectType}</option>
                     {violenceTypeOptions[language].map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -363,7 +362,7 @@ const ReportCase = () => {
                     onChange={handleInputChange}
                     className="safeminor-input"
                   >
-                    <option value="">{t.selectRelationship}</option>
+                    <option value="placeholder">{t.selectRelationship}</option>
                     {relationshipOptions[language].map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
