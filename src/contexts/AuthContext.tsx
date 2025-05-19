@@ -29,7 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Check if user email matches admin email or if user has admin role in metadata
       const isAdminUser = user.email === 'safeminor@gmail.com' || 
-                          user.user_metadata?.role === 'admin';
+                          (user.user_metadata && user.user_metadata.role === 'admin');
+      
+      console.log("Checking admin status:", { 
+        email: user.email, 
+        metadata: user.user_metadata,
+        isAdminUser 
+      });
       
       setIsAdmin(isAdminUser);
       return isAdminUser;
@@ -40,17 +46,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        if (!mounted) return;
+        
+        console.log("Auth state changed:", event);
+        
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
-        // Check admin status whenever auth state changes
         if (newSession?.user) {
           // Use setTimeout to prevent potential Supabase auth deadlocks
           setTimeout(() => {
-            checkAdminStatus();
+            if (mounted) {
+              checkAdminStatus();
+            }
           }, 0);
         } else {
           setIsAdmin(false);
@@ -61,25 +74,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (currentSession?.user) {
-        // Check admin status on initial load
-        const adminStatus = await checkAdminStatus();
-        setIsAdmin(adminStatus);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          // Check admin status on initial load
+          const adminStatus = await checkAdminStatus();
+          setIsAdmin(adminStatus);
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      
-      setIsLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setIsAdmin(false);
       toast({
         title: "Signed out successfully",
         description: "You have been logged out of your account.",

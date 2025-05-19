@@ -1,28 +1,15 @@
 
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode } from 'react';
 import AdminSidebar from '../../components/AdminSidebar';
 import AdminHeader from '../../components/AdminHeader';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { user, isLoading, isAdmin } = useAuth();
-  const navigate = useNavigate();
-  
-  // Redirect if not admin
-  useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        navigate('/admin-login');
-      } else if (!isAdmin) {
-        navigate('/');
-      }
-    }
-  }, [user, isAdmin, isLoading, navigate]);
+  const { isLoading, isAdmin } = useAuth();
   
   if (isLoading) {
     return (
@@ -32,13 +19,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     );
   }
   
-  if (!isAdmin) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-safeMinor-purple"></div>
-      </div>
-    ); // Will redirect in the useEffect
-  }
+  // AdminRoute already takes care of redirecting non-admin users
+  // so we don't need to duplicate that logic here
   
   return (
     <div className="flex h-screen bg-gray-50">

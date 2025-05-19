@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
@@ -12,21 +12,23 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, isLoading, isAdmin, checkAdminStatus } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     const verifyAdminAccess = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsVerifying(false);
+        return;
+      }
       
       try {
-        const adminStatus = await checkAdminStatus();
-        
-        if (!adminStatus) {
-          toast({
-            title: "Unauthorized",
-            description: "You don't have permission to access the admin area",
-            variant: "destructive",
-          });
-          navigate('/admin-login');
+        // Only check admin status if we don't already know
+        if (!isAdmin) {
+          const adminStatus = await checkAdminStatus();
+          setIsAuthorized(adminStatus);
+        } else {
+          setIsAuthorized(true);
         }
       } catch (error) {
         console.error('Error verifying admin status:', error);
@@ -35,17 +37,19 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
           description: "Could not verify admin privileges",
           variant: "destructive",
         });
-        navigate('/admin-login');
+        setIsAuthorized(false);
+      } finally {
+        setIsVerifying(false);
       }
     };
 
-    if (!isLoading && user) {
+    if (!isLoading) {
       verifyAdminAccess();
     }
-  }, [user, isLoading, navigate, toast, checkAdminStatus]);
+  }, [user, isLoading, navigate, toast, checkAdminStatus, isAdmin]);
 
-  if (isLoading) {
-    // Show loading state
+  // While initial loading or verifying, show loading state
+  if (isLoading || isVerifying) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-safeMinor-purple"></div>
@@ -58,13 +62,9 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     return <Navigate to="/admin-login" replace />;
   }
 
-  // If not admin, will be redirected in the useEffect
-  if (!isAdmin) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-safeMinor-purple"></div>
-      </div>
-    );
+  // If authenticated but not admin, redirect to admin login
+  if (!isAuthorized) {
+    return <Navigate to="/admin-login" replace />;
   }
 
   // If admin, render the children

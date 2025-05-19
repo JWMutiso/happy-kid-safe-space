@@ -20,21 +20,34 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useEffect(() => {
     // Check if user is already logged in as admin
     const checkSession = async () => {
       if (user) {
-        const isAdminUser = await checkAdminStatus();
-        
-        if (isAdminUser) {
-          navigate('/admin');
+        setIsCheckingAdmin(true);
+        try {
+          const isAdminUser = await checkAdminStatus();
+          
+          if (isAdminUser) {
+            // Short delay to prevent flashing between screens
+            setTimeout(() => {
+              navigate('/admin');
+            }, 100);
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+        } finally {
+          setIsCheckingAdmin(false);
         }
+      } else {
+        setIsCheckingAdmin(false);
       }
     };
     
     checkSession();
-  }, [user, navigate, isAdmin, checkAdminStatus]);
+  }, [user, navigate, checkAdminStatus]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -58,27 +71,39 @@ const AdminLogin = () => {
       
       if (error) throw error;
       
-      // Wait for auth state update
+      // Use a single setTimeout to avoid race conditions with auth state updates
       setTimeout(async () => {
-        // Check if the user is an admin
-        const isAdminUser = await checkAdminStatus();
-        
-        if (!isAdminUser) {
-          await supabase.auth.signOut();
-          throw new Error("You don't have administrator privileges");
+        try {
+          // Check if the user is an admin
+          const isAdminUser = await checkAdminStatus();
+          
+          if (!isAdminUser) {
+            await supabase.auth.signOut();
+            throw new Error("You don't have administrator privileges");
+          }
+          
+          // Set admin role in user metadata if not already set
+          await supabase.auth.updateUser({
+            data: { role: 'admin' }
+          });
+          
+          toast({
+            title: "Login successful",
+            description: "Welcome to the admin dashboard!",
+          });
+          
+          navigate('/admin');
+        } catch (error: any) {
+          console.error("Admin verification error:", error);
+          setError(error.message || "You don't have administrator privileges");
+          toast({
+            title: "Access denied",
+            description: error.message || "You don't have administrator privileges",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
         }
-        
-        // Set admin role in user metadata if not already set
-        await supabase.auth.updateUser({
-          data: { role: 'admin' }
-        });
-        
-        toast({
-          title: "Login successful",
-          description: "Welcome to the admin dashboard!",
-        });
-        
-        navigate('/admin');
       }, 300);
     } catch (error: any) {
       console.error("Admin login error:", error);
@@ -91,6 +116,15 @@ const AdminLogin = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading only when checking admin status
+  if (isCheckingAdmin) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-safeMinor-purple"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
